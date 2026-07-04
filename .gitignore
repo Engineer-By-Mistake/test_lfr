@@ -1,0 +1,13 @@
+# Ignore CMake build folders
+build/
+out/
+.cmake/
+
+# Ignore compiled binaries
+*.elf
+*.hex
+*.bin
+*.map
+
+# Ignore VS Code local settings (optional but recommended)
+.vscode/
