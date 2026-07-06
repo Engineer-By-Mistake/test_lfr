@@ -27,7 +27,9 @@
 #include "stm32f411xe.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_gpio.h"
-
+#include "ssd1306.h"
+#include <stdio.h>
+#include "ssd1306_fonts.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -70,6 +72,32 @@ static void MX_TIM1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+/* USER CODE BEGIN 0 */
+
+// Function to update the OLED screen
+void update_display(int32_t speed, float battery_volts) {
+    char buffer[32]; 
+    
+    // 1. Clear the screen buffer
+    ssd1306_Fill(Black);
+    
+    // 2. Format and Print Speed
+    ssd1306_SetCursor(2, 5); 
+    sprintf(buffer, "Speed: %ld", speed); 
+    ssd1306_WriteString(buffer, Font_7x10, White);
+    
+    // 3. Format and Print Battery Voltage
+    ssd1306_SetCursor(2, 20);
+    sprintf(buffer, "Bat: %.1f V", battery_volts); 
+    ssd1306_WriteString(buffer, Font_7x10, White);
+    
+    // 4. Print System Status
+    ssd1306_SetCursor(2, 45);
+    ssd1306_WriteString("SYS: ONLINE", Font_7x10, White);
+    
+    // 5. Push the buffer to the physical OLED
+    ssd1306_UpdateScreen();
+}
 
 /* USER CODE END 0 */
 
@@ -111,22 +139,25 @@ int main(void)
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
   motor_pin_set(&htim1);
+  ssd1306_Init();
+  uint32_t last_display_update = 0; 
+  float dummy_battery = 7.4f;     
+  int32_t current_speed = 500;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5) == 0){
-      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
-    }
-    else {
-    
-    
-      HAL_Delay(500);
-      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
-      HAL_Delay(500);
-    }
+    if (HAL_GetTick() - last_display_update >= 500) {
+          last_display_update = HAL_GetTick(); // Reset the timer
+          
+          // Flash the onboard LED so you know the loop isn't frozen
+          HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+          
+          // Push new data to the screen
+          update_display(current_speed, dummy_battery);
+      }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -192,6 +223,8 @@ static void MX_ADC1_Init(void)
 
   /* USER CODE END ADC1_Init 0 */
 
+  ADC_ChannelConfTypeDef sConfig = {0};
+
   /* USER CODE BEGIN ADC1_Init 1 */
 
   /* USER CODE END ADC1_Init 1 */
@@ -207,10 +240,76 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.NbrOfConversion = 9;
   hadc1.Init.DMAContinuousRequests = ENABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Rank = 2;
+  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Rank = 3;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Rank = 4;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Rank = 5;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Rank = 6;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Rank = 7;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Rank = 8;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Rank = 9;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
   }
@@ -411,6 +510,29 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void update_display(int32_t speed, float battery_volts) {
+    char buffer[32]; 
+    
+    // 1. Clear the screen buffer
+    ssd1306_Fill(Black);
+    
+    // 2. Format and Print Speed
+    ssd1306_SetCursor(2, 5); 
+    sprintf(buffer, "Speed: %ld", speed); 
+    ssd1306_WriteString(buffer, Font_7x10, White);
+    
+    // 3. Format and Print Battery Voltage
+    ssd1306_SetCursor(2, 20);
+    sprintf(buffer, "Bat: %.1f V", battery_volts); 
+    ssd1306_WriteString(buffer, Font_7x10, White);
+    
+    // 4. Print System Status
+    ssd1306_SetCursor(2, 45);
+    ssd1306_WriteString("SYS: ONLINE", Font_7x10, White);
+    
+    // 5. Push the buffer to the physical OLED
+    ssd1306_UpdateScreen();
+}
 
 /* USER CODE END 4 */
 

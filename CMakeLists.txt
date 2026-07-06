@@ -46,6 +46,8 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/motor.c
     Core/Src/mpu6050.c
+    Core/Src/ssd1306.c
+    Core/Src/ssd1306_fonts.c
     # Add user sources here
 )
 

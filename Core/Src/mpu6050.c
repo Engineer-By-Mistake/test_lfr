@@ -85,8 +85,8 @@ void data_convert(void){
     true_reading.axceloro[1]=raw_values.axceloro[1]/2048.0f;
     true_reading.axceloro[2]=raw_values.axceloro[2]/2048.0f;
     true_reading.gyro[0]=raw_values.gyro[0]/16.4f;
-    true_reading.gyro[2]=raw_values.gyro[1]/16.4f;
-    true_reading.gyro[3]=raw_values.gyro[2]/16.4f;
+    true_reading.gyro[1]=raw_values.gyro[1]/16.4f;
+    true_reading.gyro[2]=raw_values.gyro[2]/16.4f;
 }
 
 
