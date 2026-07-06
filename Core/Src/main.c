@@ -26,6 +26,7 @@
 #include "motor.h"
 #include "stm32f411xe.h"
 #include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_adc.h"
 #include "stm32f4xx_hal_gpio.h"
 #include "ssd1306.h"
 #include <stdio.h>
@@ -56,7 +57,10 @@ I2C_HandleTypeDef hi2c1;
 TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN PV */
-
+volatile uint16_t sensor_val_batt[9];
+uint32_t last_display_update = 0; 
+  float dummy_battery = 7.4f;     
+  int32_t current_speed = 500;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -72,32 +76,7 @@ static void MX_TIM1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-/* USER CODE BEGIN 0 */
 
-// Function to update the OLED screen
-void update_display(int32_t speed, float battery_volts) {
-    char buffer[32]; 
-    
-    // 1. Clear the screen buffer
-    ssd1306_Fill(Black);
-    
-    // 2. Format and Print Speed
-    ssd1306_SetCursor(2, 5); 
-    sprintf(buffer, "Speed: %ld", speed); 
-    ssd1306_WriteString(buffer, Font_7x10, White);
-    
-    // 3. Format and Print Battery Voltage
-    ssd1306_SetCursor(2, 20);
-    sprintf(buffer, "Bat: %.1f V", battery_volts); 
-    ssd1306_WriteString(buffer, Font_7x10, White);
-    
-    // 4. Print System Status
-    ssd1306_SetCursor(2, 45);
-    ssd1306_WriteString("SYS: ONLINE", Font_7x10, White);
-    
-    // 5. Push the buffer to the physical OLED
-    ssd1306_UpdateScreen();
-}
 
 /* USER CODE END 0 */
 
@@ -140,24 +119,14 @@ int main(void)
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
   motor_pin_set(&htim1);
   ssd1306_Init();
-  uint32_t last_display_update = 0; 
-  float dummy_battery = 7.4f;     
-  int32_t current_speed = 500;
+  HAL_ADC_Start_DMA(&hadc1, (void *)sensor_val_batt, 9);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    if (HAL_GetTick() - last_display_update >= 500) {
-          last_display_update = HAL_GetTick(); // Reset the timer
-          
-          // Flash the onboard LED so you know the loop isn't frozen
-          HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-          
-          // Push new data to the screen
-          update_display(current_speed, dummy_battery);
-      }
+   
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -251,7 +220,7 @@ static void MX_ADC1_Init(void)
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
   sConfig.Channel = ADC_CHANNEL_0;
-  sConfig.Rank = 2;
+  sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -260,6 +229,16 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = 2;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_2;
   sConfig.Rank = 3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -268,6 +247,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
+  sConfig.Channel = ADC_CHANNEL_3;
   sConfig.Rank = 4;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -276,6 +256,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
+  sConfig.Channel = ADC_CHANNEL_4;
   sConfig.Rank = 5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -284,6 +265,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
+  sConfig.Channel = ADC_CHANNEL_5;
   sConfig.Rank = 6;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -292,6 +274,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
+  sConfig.Channel = ADC_CHANNEL_6;
   sConfig.Rank = 7;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -300,6 +283,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
+  sConfig.Channel = ADC_CHANNEL_7;
   sConfig.Rank = 8;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -308,6 +292,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
+  sConfig.Channel = ADC_CHANNEL_VBAT;
   sConfig.Rank = 9;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -323,7 +308,8 @@ static void MX_ADC1_Init(void)
   * @brief I2C1 Initialization Function
   * @param None
   * @retval None
-  */
+*/ 
+//need to add erroer handling for i2c for displlay as it not importent and for mpu60550 we need to flash the pc13 led 
 static void MX_I2C1_Init(void)
 {
 
