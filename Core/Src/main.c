@@ -59,8 +59,7 @@ TIM_HandleTypeDef htim1;
 /* USER CODE BEGIN PV */
 volatile uint16_t sensor_val_batt[9];
 uint32_t last_display_update = 0; 
-  float dummy_battery = 7.4f;     
-  int32_t current_speed = 500;
+  float dummy_battery = 0;     
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -76,7 +75,7 @@ static void MX_TIM1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+int32_t current_speed = 500;
 
 /* USER CODE END 0 */
 
@@ -119,16 +118,47 @@ int main(void)
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
   motor_pin_set(&htim1);
   ssd1306_Init();
+  MPU6050_Init();
   HAL_ADC_Start_DMA(&hadc1, (void *)sensor_val_batt, 9);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
-  {
+  {char buf[32]; // Buffer to hold our formatted text
+
+      // 1. Wipe the previous frame
+      ssd1306_Fill(Black);
+
+      // 2. Draw a Header
+      ssd1306_SetCursor(2, 2);
+      ssd1306_WriteString("SENSOR DEBUG", Font_7x10, White);
+      ssd1306_Line(0, 13, 128, 13, White); // Underline
+
+      // 3. Draw Left Sensors (S1 to S4)
+      for(int i = 0; i < 4; i++) {
+          ssd1306_SetCursor(2, 17 + (i * 11)); // Spaced 11 pixels apart vertically
+          
+          // %d is the sensor number, %4d forces the value to take up exactly 4 spaces 
+          // so the text doesn't jitter left and right when numbers change size
+          sprintf(buf, "S%d: %4d", i + 1, sensor_val_batt[i]); 
+          ssd1306_WriteString(buf, Font_6x8, White);
+      }
+
+      // 4. Draw Right Sensors (S5 to S8)
+      for(int i = 4; i < 8; i++) {
+          // X cursor is at 66 to put these on the right half of the screen
+          ssd1306_SetCursor(66, 17 + ((i - 4) * 11)); 
+          
+          sprintf(buf, "S%d: %4d", i + 1, sensor_val_batt[i]);
+          ssd1306_WriteString(buf, Font_6x8, White);
+      }
+
+      // 5. Push the graphics to the screen
+      ssd1306_UpdateScreen();
    
     /* USER CODE END WHILE */
-
+      HAL_Delay(100);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
