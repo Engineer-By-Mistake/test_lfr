@@ -38,8 +38,8 @@ void motor_control (int32_t a, int32_t b,TIM_HandleTypeDef *c){
     else if (a>0 && b<0) {
         HAL_GPIO_WritePin(portB, bni1,0);
         HAL_GPIO_WritePin(portB, bni2,1);
-        HAL_GPIO_WritePin(portA, ani1,0);
-        HAL_GPIO_WritePin(portA, ani2,1);
+        HAL_GPIO_WritePin(portA, ani1,1);
+        HAL_GPIO_WritePin(portA, ani2,0);
         __HAL_TIM_SET_COMPARE(c, TIM_CHANNEL_1, a);
         __HAL_TIM_SET_COMPARE(c, TIM_CHANNEL_4, abs(b));
     }

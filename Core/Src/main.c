@@ -116,7 +116,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
-  motor_pin_set(&htim1);
   ssd1306_Init();
   MPU6050_Init();
   HAL_ADC_Start_DMA(&hadc1, (void *)sensor_val_batt, 9);
@@ -125,7 +124,8 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
-  {char buf[32]; // Buffer to hold our formatted text
+  {
+   char buf[32]; // Buffer to hold our formatted text
 
       // 1. Wipe the previous frame
       ssd1306_Fill(Black);
@@ -338,8 +338,7 @@ static void MX_ADC1_Init(void)
   * @brief I2C1 Initialization Function
   * @param None
   * @retval None
-*/ 
-//need to add erroer handling for i2c for displlay as it not importent and for mpu60550 we need to flash the pc13 led 
+  */
 static void MX_I2C1_Init(void)
 {
 
@@ -381,6 +380,7 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_SlaveConfigTypeDef sSlaveConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
@@ -400,11 +400,16 @@ static void MX_TIM1_Init(void)
   {
     Error_Handler();
   }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
   {
     Error_Handler();
   }
-  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_EXTERNAL1;
+  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_DISABLE;
   sSlaveConfig.InputTrigger = TIM_TS_ITR0;
   if (HAL_TIM_SlaveConfigSynchro(&htim1, &sSlaveConfig) != HAL_OK)
   {
