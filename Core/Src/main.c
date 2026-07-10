@@ -59,7 +59,8 @@ TIM_HandleTypeDef htim1;
 /* USER CODE BEGIN PV */
 volatile uint16_t sensor_val_batt[9];
 uint32_t last_display_update = 0; 
-  float dummy_battery = 0;     
+  float dummy_battery = 7.4f;     
+  int32_t current_speed = 500;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -75,7 +76,7 @@ static void MX_TIM1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int32_t current_speed = 500;
+
 
 /* USER CODE END 0 */
 
@@ -83,6 +84,7 @@ int32_t current_speed = 500;
   * @brief  The application entry point.
   * @retval int
   */
+  void test_sensor(void );
 int main(void)
 {
 
@@ -116,8 +118,9 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
-  ssd1306_Init();
+  motor_pin_set(&htim1);
   MPU6050_Init();
+  ssd1306_Init();
   HAL_ADC_Start_DMA(&hadc1, (void *)sensor_val_batt, 9);
   /* USER CODE END 2 */
 
@@ -125,7 +128,17 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-   char buf[32]; // Buffer to hold our formatted text
+   test_sensor();
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+  }
+  /* USER CODE END 3 */
+}
+
+void test_sensor(void ){
+  char buf[32]; // Buffer to hold our formatted text
+  char wing_buf[32]; // Buffer for the 6 wing sensors
 
       // 1. Wipe the previous frame
       ssd1306_Fill(Black);
@@ -137,7 +150,7 @@ int main(void)
 
       // 3. Draw Left Sensors (S1 to S4)
       for(int i = 0; i < 4; i++) {
-          ssd1306_SetCursor(2, 17 + (i * 11)); // Spaced 11 pixels apart vertically
+          ssd1306_SetCursor(2, 17 + (i * 9)); // Tightened spacing to 9 pixels apart
           
           // %d is the sensor number, %4d forces the value to take up exactly 4 spaces 
           // so the text doesn't jitter left and right when numbers change size
@@ -148,22 +161,36 @@ int main(void)
       // 4. Draw Right Sensors (S5 to S8)
       for(int i = 4; i < 8; i++) {
           // X cursor is at 66 to put these on the right half of the screen
-          ssd1306_SetCursor(66, 17 + ((i - 4) * 11)); 
+          ssd1306_SetCursor(66, 17 + ((i - 4) * 9)); // Tightened spacing to 9 pixels apart
           
           sprintf(buf, "S%d: %4d", i + 1, sensor_val_batt[i]);
           ssd1306_WriteString(buf, Font_6x8, White);
       }
 
-      // 5. Push the graphics to the screen
+      // 5. Read Wing Sensors (Digital Pins)
+      // Left Wing: PB2, PB1, PB0
+      uint8_t L3 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_2);
+      uint8_t L2 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1);
+      uint8_t L1 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0);
+      
+      // Right Wing: PB10, PB12, PB13
+      uint8_t R1 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10);
+      uint8_t R2 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_12);
+      uint8_t R3 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_13);
+
+      // Format as "WNG L:111 R:111"
+      sprintf(wing_buf, "WNG L:%d%d%d R:%d%d%d", L3, L2, L1, R1, R2, R3);
+      
+      // 6. Draw Wing Sensors at the bottom of the screen
+      ssd1306_SetCursor(2, 54); // Y=54 places this perfectly on the bottom edge
+      ssd1306_WriteString(wing_buf, Font_6x8, White);
+
+      // 7. Push the graphics to the screen
       ssd1306_UpdateScreen();
    
-    /* USER CODE END WHILE */
-      HAL_Delay(100);
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
-}
 
+      HAL_Delay(100);
+    }
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -504,9 +531,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB0 PB1 PB2 PB10
-                           PB5 */
+                           PB12 PB13 PB5 */
   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_10
-                          |GPIO_PIN_5;
+                          |GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
